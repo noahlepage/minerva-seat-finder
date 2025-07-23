@@ -36,4 +36,5 @@ jobs:
           STUDENT_ID: ${{ secrets.STUDENT_ID }}
           PASSWORD: ${{ secrets.PASSWORD }}
           COURSES: ${{ vars.COURSES }}
+          DISABLE_SCRIPT: ${{ vars.DISABLE_SCRIPT }}
         run: python main.py

@@ -1,6 +1,7 @@
 import os
 import re
 import requests
+import sys
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
@@ -112,8 +113,6 @@ def run_for_course(session, subject, course):
         discord_notify(f"Waitlist available for {subject} {course}!", text)
 
 def main():
-    load_dotenv(override=False)
-
     sid = env_required("STUDENT_ID")
     pin = env_required("PASSWORD")
     raw_courses = env_required("COURSES")
@@ -130,4 +129,10 @@ def main():
                 print(f"[{subj} {num}] error: {ex}")
 
 if __name__ == "__main__":
+    load_dotenv(override=False)
+    
+    if os.getenv("DISABLE_SCRIPT") == "1":
+        print("Script disabled via DISABLE_SCRIPT env var.")
+        sys.exit(0)
+    
     main()
