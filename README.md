@@ -1,4 +1,4 @@
-# Minerva Seat Finder - README.txt
+# Minerva Seat Finder
 
 ## Overview
 
@@ -13,7 +13,7 @@ A tiny Python script that logs into Minerva site, fetches seat/waitlist info for
 
 ## Environment Variables
 
-Set these locally (e.g., in a `.env` file) and in GitHub Secrets:
+Set these locally (e.g., in a `.env` file):
 
 - student_id -> your McGill Student ID
 - password -> your PIN/password
@@ -48,19 +48,14 @@ python main.py MATH 140
   - Repo (or environment) secrets `STUDENT_ID`, `PASSWORD`
   - `permissions: contents: write` to commit state file
 
-Key workflow steps:
-
-- Checkout code
-- Install Python & dependencies
-- Run `main.py`
-
 ## Discord Notifications
 
 A simple `discord_notify()` sends an embed with:
 
 - Title (e.g., “Seats available for COMP 307!”)
-- Description: seat and waitlist numbers
-  If you need formatting (bold, code blocks), adjust the payload.
+- Description: seat and waitlist numbers.
+
+If you need formatting (bold, code blocks), adjust the payload.
 
 ## Extending
 
