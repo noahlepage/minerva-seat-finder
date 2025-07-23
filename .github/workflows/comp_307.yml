@@ -1,0 +1,31 @@
+name: COMP 307
+
+on:
+  schedule:
+    - cron: "*/60 * * * *"
+  workflow_dispatch:
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: pip install -r requirements.txt
+
+      - name: Run monitor
+        env:
+          discord_webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          student_id: ${{ secrets.STUDENT_ID }}
+          password: ${{ secrets.PASSWORD }}
+        run: python main.py COMP 307
