@@ -1,6 +1,5 @@
 import os
-import sys
-import argparse
+import re
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
@@ -22,22 +21,33 @@ def env_required(name: str) -> str:
     return val
 
 def discord_notify(title: str, text: str):
-    webhook = env_required("discord_webhook_url")
+    webhook = env_required("DISCORD_WEBHOOK_URL")
     payload = {"embeds": [{"title": title, "description": text}]}
     r = requests.post(webhook, json=payload, timeout=10)
     r.raise_for_status()
 
-# ---------- core logic ----------
+def parse_course_list(env_value: str):
+    """Parse 'COMP:307,MATH:140' → [('COMP','307'), ('MATH','140')]"""
+    pairs = []
+    for chunk in env_value.split(","):
+        chunk = chunk.strip()
+        if not chunk:
+            continue
+        if ":" not in chunk:
+            raise ValueError(f"Bad course spec '{chunk}', expected SUBJECT:NUMBER")
+        subj, num = chunk.split(":", 1)
+        pairs.append((subj.strip(), num.strip()))
+    return pairs
 
-def login(session: requests.Session, sid: str, pin: str) -> None:
-    r = session.get(LOGIN_FORM_URL, timeout=15)
+# ---------- network ----------
+
+def login(session: requests.Session, sid: str, pin: str):
+    session.get(LOGIN_FORM_URL, timeout=15)
+    payload = {"sid": sid, "PIN": pin}
+    r = session.post(LOGIN_URL, data=payload, timeout=15)
     r.raise_for_status()
-
-    resp = session.post(LOGIN_URL, params={"sid": sid, "PIN": pin}, timeout=15)
-    resp.raise_for_status()
-    ok = '<meta http-equiv="refresh" content="0;url=/pban1/twbkwbis.P_GenMenu?name=bmenu.P_MainMnu">' in resp.text
-    if not ok:
-        raise RuntimeError("Login failed (did not find refresh meta tag).")
+    if 'twbkwbis.P_GenMenu?name=bmenu.P_MainMnu' not in r.text:
+        raise RuntimeError("Login failed.")
 
 def get_course_sections(session: requests.Session, subject: str, course: str) -> str:
     params = [
@@ -58,60 +68,66 @@ def get_course_sections(session: requests.Session, subject: str, course: str) ->
         ("sel_dunt_code", ""), ("sel_dunt_unit", ""),
         ("call_value_in", ""), ("rsts", "dummy"),
         ("crn", "dummy"), ("path", "1"),
-        ("SUB_BTN", "View Sections")
+        ("SUB_BTN", "View Sections"),
     ]
-     
-    resp = session.get(SECTIONS_URL, params=params, timeout=20)
-    resp.raise_for_status()
-    return resp.text
+    r = session.get(SECTIONS_URL, params=params, timeout=20)
+    r.raise_for_status()
+    return r.text
 
 def parse_waitlist(html: str, course: str, subject: str) -> dict:
     soup = BeautifulSoup(html, "html.parser")
-    
-    cell = soup.find(string=course)
+
+    # strict match of the course number in a cell
+    cell = soup.find(string=re.compile(rf"^\s*{re.escape(str(course))}\s*$"))
     if not cell:
         raise RuntimeError(f"Couldn't find course {course} in page.")
-    row = cell.find_parent("tr")
 
-    cols = row.find_all("td")[10:16]
-    values = [c.get_text(strip=True) for c in cols]
+    row = cell.find_parent("tr")
+    tds = row.find_all("td")
+    cols = tds[10:16]
+    values = [td.get_text(strip=True) for td in cols]
+
     data = dict(zip(DATA_MAP, values))
     data["Subject"] = subject
     data["Course"] = course
     return data
 
-def run(subject: str, course: str):
-    sid = env_required("student_id")
-    pin = env_required("password")
+# ---------- main ----------
 
-    with requests.Session() as s:
-        login(s, sid, pin)
-        html = get_course_sections(s, subject, course)
-        data = parse_waitlist(html, course, subject)
+def run_for_course(session, subject, course):
+    html = get_course_sections(session, subject, course)
+    data = parse_waitlist(html, course, subject)
 
     lines = [f"{subject} {course}"]
-    lines += [f"{k}: {v}" for k, v in data.items() if k in DATA_MAP]
-    text = "\n".join(lines)
+    lines += [f"{k}" for k in DATA_MAP]
+    # But ensure order matches DATA_MAP:
+    text = "\n".join([f"{subject} {course}"] +
+                     [f"{k}: {data[k]}" for k in DATA_MAP])
 
     print(text)
 
-    seats_rem = data["Seats Available"]
-    wl_rem = data["Waitlist Remaining"]
-
-    if seats_rem != "0":
+    if data["Seats Available"] != "0":
         discord_notify(f"Seats available for {subject} {course}!", text)
-    elif wl_rem != "0":
+    elif data["Waitlist Remaining"] != "0":
         discord_notify(f"Waitlist available for {subject} {course}!", text)
 
-# ---------- CLI ----------
+def main():
+    load_dotenv(override=False)
 
-def parse_args(argv):
-    p = argparse.ArgumentParser()
-    p.add_argument("subject")
-    p.add_argument("course")
-    return p.parse_args(argv)
+    sid = env_required("STUDENT_ID")
+    pin = env_required("PASSWORD")
+    raw_courses = env_required("COURSES")
+    course_list = parse_course_list(raw_courses)
+
+    with requests.Session() as sess:
+        sess.headers.update({"User-Agent": "Mozilla/5.0"})
+        login(sess, sid, pin)
+
+        for subj, num in course_list:
+            try:
+                run_for_course(sess, subj, num)
+            except Exception as ex:
+                print(f"[{subj} {num}] error: {ex}")
 
 if __name__ == "__main__":
-    load_dotenv()
-    args = parse_args(sys.argv[1:])
-    run(args.subject, args.course)
+    main()

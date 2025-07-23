@@ -1,4 +1,4 @@
-name: COMP 307
+name: Find seats
 
 on:
   schedule:
@@ -25,7 +25,8 @@ jobs:
 
       - name: Run monitor
         env:
-          discord_webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          student_id: ${{ secrets.STUDENT_ID }}
-          password: ${{ secrets.PASSWORD }}
-        run: python main.py COMP 307
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          STUDENT_ID: ${{ secrets.STUDENT_ID }}
+          PASSWORD: ${{ secrets.PASSWORD }}
+          COURSES: ${{ vars.COURSES }}
+        run: python main.py

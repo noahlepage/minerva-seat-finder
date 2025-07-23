@@ -13,11 +13,12 @@ A tiny Python script that logs into Minerva site, fetches seat/waitlist info for
 
 ## Environment Variables
 
-Set these locally (e.g., in a `.env` file):
+Set these locally (e.g., in a `.env` file) and your Github repo:
 
-- student_id -> your McGill Student ID
-- password -> your PIN/password
-- discord_webhook_url -> Discord channel webhook
+- STUDENT_ID -> your McGill Student ID
+- PASSWORD -> your Minerva PIN
+- DISCORD_WEBHOOK_URL -> Discord channel webhook
+- COURSES -> Comma-separated list of courses you wish to fetch (ex. COMP:202,MATH:140)
 
 ## Local Setup & Run
 
@@ -25,41 +26,29 @@ Set these locally (e.g., in a `.env` file):
    pip install -r requirements.txt
 
 2. Run:
-   python main.py COMP 307
-
-   (Replace COMP and 307 with your subject & course.)
+   python main.py
 
 3. Output prints seat/waitlist stats. If seats/waitlist are available, it posts to Discord.
 
-## Usage (CLI)
-
-python main.py <SUBJECT> <COURSE>
-
-Examples:
-python main.py COMP 307
-python main.py MATH 140
-
 ## GitHub Actions Automation
 
-- Workflow file: `.github/workflows/comp_307.yml`
+- Workflow file: `.github/workflows/find-seats.yml`
 - Runs every 60 minutes via cron and can be triggered manually using `workflow_dispatch`.
 - Requires:
-  - Repo secret `DISCORD_WEBHOOK_URL`
-  - Repo (or environment) secrets `STUDENT_ID`, `PASSWORD`
-  - `permissions: contents: write` to commit state file
+  - Repo secrets `DISCORD_WEBHOOK_URL`, `STUDENT_ID`, `PASSWORD`
+  - Environment variable `COURSES`
 
 ## Discord Notifications
 
 A simple `discord_notify()` sends an embed with:
 
-- Title (e.g., “Seats available for COMP 307!”)
+- Title (e.g., “Seats available for COMP 202!”)
 - Description: seat and waitlist numbers.
 
 If you need formatting (bold, code blocks), adjust the payload.
 
 ## Extending
 
-- Monitor multiple courses: loop through a list and aggregate messages.
 - Store status in Redis/S3 to avoid spamming in case seats are found.
 
 ## License / Credits
