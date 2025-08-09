@@ -24,11 +24,11 @@ jobs:
       - name: Install deps
         run: pip install -r requirements.txt
 
-      - name: Random jitter
-        run: |
-          delay=$(( RANDOM % 900 ))
-          echo "Sleeping $delay seconds to randomize start time..."
-          sleep $delay
+      # - name: Random jitter
+      #   run: |
+      #     delay=$(( RANDOM % 900 ))
+      #     echo "Sleeping $delay seconds to randomize start time..."
+      #     sleep $delay
 
       - name: Run monitor
         env:
