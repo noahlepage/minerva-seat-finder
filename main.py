@@ -89,7 +89,8 @@ def parse_waitlist(html: str, course: str, subject: str) -> dict:
 
     data = dict(zip(DATA_MAP, values))
     closed_tag = row.find("abbr", title=re.compile(r"Closed", re.I))
-    data["Closed"] = bool(closed_tag)
+    checkbox = row.find("input", attrs={"type": "checkbox", "name": "sel_crn"})
+    data["Closed"] = bool(closed_tag) or (checkbox is None)
     data["Subject"] = subject
     data["Course"] = course
     return data
