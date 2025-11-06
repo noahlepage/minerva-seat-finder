@@ -89,6 +89,8 @@ def parse_waitlist(html: str, course: str, subject: str) -> dict:
     values = [td.get_text(strip=True) for td in cols]
 
     data = dict(zip(DATA_MAP, values))
+    closed_tag = row.find("abbr", title=re.compile(r"Closed", re.I))
+    data["Closed"] = bool(closed_tag)
     data["Subject"] = subject
     data["Course"] = course
     return data
@@ -98,15 +100,21 @@ def parse_waitlist(html: str, course: str, subject: str) -> dict:
 def run_for_course(session, subject, course):
     html = get_course_sections(session, subject, course)
     data = parse_waitlist(html, course, subject)
+    course_closed = data.get("Closed", True)
 
     lines = [f"{subject} {course}"]
     lines += [f"{k}" for k in DATA_MAP]
     # But ensure order matches DATA_MAP:
-    text = "\n".join([f"{subject} {course}"] +
+    text = "\n".join([f"{subject} {course}"] + 
+                     [f"Can register? {not course_closed}"] +
                      [f"{k}: {data[k]}" for k in DATA_MAP])
 
     print(text)
-
+    
+    # Course is closed.. no point in checking seats available
+    if course_closed:
+        return
+    
     if data["Seats Available"] != "0":
         discord_notify(f"Seats available for {subject} {course}!", text)
     elif data["Waitlist Remaining"] != "0":
