@@ -5,7 +5,6 @@ import sys
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
-TERM = "202601"
 DATA_MAP = ["Seats", "Seats Taken", "Seats Available",
             "Waitlist Capacity", "Waitlist Total", "Waitlist Remaining"]
 
@@ -50,9 +49,9 @@ def login(session: requests.Session, sid: str, pin: str):
     if 'twbkwbis.P_GenMenu?name=bmenu.P_MainMnu' not in r.text:
         raise RuntimeError("Login failed.")
 
-def get_course_sections(session: requests.Session, subject: str, course: str) -> str:
+def get_course_sections(session: requests.Session, term: str, subject: str, course: str) -> str:
     params = [
-        ("term_in", TERM),
+        ("term_in", term),
         ("sel_subj", "dummy"),
         ("sel_subj", subject),
         ("SEL_CRSE", course),
@@ -97,8 +96,8 @@ def parse_waitlist(html: str, course: str, subject: str) -> dict:
 
 # ---------- main ----------
 
-def run_for_course(session, subject, course):
-    html = get_course_sections(session, subject, course)
+def run_for_course(session, term, subject, course):
+    html = get_course_sections(session, term, subject, course)
     data = parse_waitlist(html, course, subject)
     course_closed = data.get("Closed", True)
 
@@ -121,6 +120,7 @@ def run_for_course(session, subject, course):
         discord_notify(f"Waitlist available for {subject} {course}!", text)
 
 def main():
+    term = env_required("TERM")
     sid = env_required("STUDENT_ID")
     pin = env_required("PASSWORD")
     raw_courses = env_required("COURSES")
@@ -132,12 +132,12 @@ def main():
 
         for subj, num in course_list:
             try:
-                run_for_course(sess, subj, num)
+                run_for_course(sess, term, subj, num)
             except Exception as ex:
                 print(f"[{subj} {num}] error: {ex}")
 
 if __name__ == "__main__":
-    load_dotenv(override=False)
+    load_dotenv(override=True)
     
     if os.getenv("DISABLE_SCRIPT") == "1":
         print("Script disabled via DISABLE_SCRIPT env var.")
