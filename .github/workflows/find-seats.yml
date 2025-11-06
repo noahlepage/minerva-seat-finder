@@ -37,4 +37,5 @@ jobs:
           PASSWORD: ${{ secrets.PASSWORD }}
           COURSES: ${{ vars.COURSES }}
           DISABLE_SCRIPT: ${{ vars.DISABLE_SCRIPT }}
+          TERM: ${{ vars.TERM }}
         run: python main.py
