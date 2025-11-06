@@ -15,10 +15,14 @@ A tiny Python script that logs into Minerva site, fetches seat/waitlist info for
 
 Set these locally (e.g., in a `.env` file) and your Github repo:
 
-- STUDENT_ID -> your McGill Student ID
-- PASSWORD -> your Minerva PIN
-- DISCORD_WEBHOOK_URL -> Discord channel webhook
-- COURSES -> Comma-separated list of courses you wish to fetch (ex. COMP:202,MATH:140)
+- `TERM` -> McGill term code (in format `YYYYMM` for the starting month):
+  - 202509 for Fall 2025
+  - 202601 for Winter 2026
+  - 202605 for Summer 2026
+- `STUDENT_ID` -> your McGill Student ID
+- `PASSWORD` -> your Minerva PIN
+- `DISCORD_WEBHOOK_URL` -> Discord channel webhook
+- `COURSES` -> Comma-separated list of courses you wish to fetch (ex. COMP:202,MATH:140)
 
 ## Local Setup & Run
 
@@ -36,7 +40,7 @@ Set these locally (e.g., in a `.env` file) and your Github repo:
 - Runs every 60 minutes via cron and can be triggered manually using `workflow_dispatch`.
 - Requires:
   - Repo secrets `DISCORD_WEBHOOK_URL`, `STUDENT_ID`, `PASSWORD`
-  - Environment variable `COURSES`
+  - Environment variable `TERM`, `COURSES`
 
 ## Discord Notifications
 
